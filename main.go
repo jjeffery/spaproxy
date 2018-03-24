@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/jjeffery/apigatewayproxy"
 	"github.com/jjeffery/kv"
 	"github.com/jjeffery/shutdown"
 	"github.com/jjeffery/spaproxy/config"
@@ -13,6 +14,12 @@ import (
 )
 
 func main() {
+	isLambda := apigatewayproxy.IsLambda()
+	if isLambda {
+		// cloudwatch logs already include the timestamp
+		log.SetFlags(0)
+	}
+
 	if err := config.Load(); err != nil {
 		log.Fatalln("fatal:", err)
 	}
@@ -22,6 +29,12 @@ func main() {
 		log.Fatalln("fatal:", err)
 	}
 
+	if isLambda {
+		apigatewayproxy.Start(h)
+		return
+	}
+
+	// not a lambda: run as a web server
 	addr := ":8080"
 	if port, ok := os.LookupEnv("PORT"); ok {
 		addr = ":" + port
