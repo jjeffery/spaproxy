@@ -13,7 +13,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/jjeffery/errors"
@@ -163,7 +162,6 @@ func (s *Session) Token() *oauth2.Token {
 	tok.TokenType, _ = s.sess.Values["token_type"].(string)
 	expiry, _ := s.sess.Values["expiry"].(string)
 	tok.Expiry, _ = time.Parse(time.RFC3339, expiry)
-	spew.Dump("token", tok)
 	return &tok
 }
 
