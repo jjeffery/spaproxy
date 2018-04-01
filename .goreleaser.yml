@@ -11,4 +11,4 @@ archive:
   format: zip
   files:
     - README.md
-    - LICENSE
+    - LICENSE.md
