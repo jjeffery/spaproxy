@@ -1,0 +1,14 @@
+# golreleaser config for building a zip file that
+# can be used with AWS Lambda
+builds:
+  - binary: spaproxy
+    goos:
+      - linux
+    goarch:
+      - amd64
+
+archive:
+  format: zip
+  files:
+    - README.md
+    - LICENSE

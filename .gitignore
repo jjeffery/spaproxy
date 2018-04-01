@@ -2,5 +2,6 @@
 debug
 *.tmp
 vendor
+dist
 
 local.hcl
