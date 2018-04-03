@@ -115,8 +115,8 @@
 [[projects]]
   name = "github.com/jjeffery/apigatewayproxy"
   packages = ["."]
-  revision = "ad224c6000cbe09c6c4959d4b13cbea8a20be270"
-  version = "v1.0.0"
+  revision = "ed9fb92f4a6009912032eab5c4affe1b096809a6"
+  version = "v1.0.1"
 
 [[projects]]
   name = "github.com/jjeffery/errkind"
@@ -227,6 +227,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6459c4930bc00497438e51c785138bcbbfcd1e738d594b7683c87a616898ba5c"
+  inputs-digest = "b8e93d21d6fe922b536cd8c605308ab4908998414837783a203a102c0bd7cbee"
   solver-name = "gps-cdcl"
   solver-version = 1
