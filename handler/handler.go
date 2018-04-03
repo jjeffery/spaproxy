@@ -175,6 +175,16 @@ func (s *stuff) handleOauth2Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if sess.IsValid() {
+		// already logged in in another tab
+		redirectURI := config.File.SiteURL
+		log.Println("redirecting", kv.List{
+			"url", redirectURI,
+		})
+		http.Redirect(w, r, redirectURI, http.StatusTemporaryRedirect)
+		return
+	}
+
 	q := r.URL.Query()
 	state := q.Get("state")
 	code := q.Get("code")
@@ -185,31 +195,28 @@ func (s *stuff) handleOauth2Callback(w http.ResponseWriter, r *http.Request) {
 			"actual", state,
 			"session", sess.ID(),
 		})
-		sess.Clear(w, r)
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
-	sess.ClearNonce()
 
 	token, err := s.oauth2.Exchange(r.Context(), code)
 	if err != nil {
 		err = errors.Wrap(err, "cannot exchange oauth2 code for token")
 		log.Println("warn:", err)
-		sess.Clear(w, r)
 		// todo(jpj): is this the correct error response, probably not
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
 
 	redirectURI := sess.RequestURI()
-	if redirectURI == "" {
+	if redirectURI == "" || strings.Contains(redirectURI, "/oauth2/") {
 		redirectURI = config.File.SiteURL
 	}
 	log.Println("redirecting", kv.List{
 		"url", redirectURI,
 	})
 
-	sess.Clear(w, r)
+	sess.Clear()
 	sess.SetToken(token)
 	sess.Save(w, r)
 	http.Redirect(w, r, redirectURI, http.StatusTemporaryRedirect)
@@ -224,12 +231,7 @@ func (s *stuff) handleOauth2Logout(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	sess.Clear(w, r)
-
-	// redirecting to the login page, so set the session
-	// lifetime to a long time -- the login page can display
-	// for days before someone logs in
-	sess.SetExpires(time.Hour * 168)
+	sess.Delete(w, r)
 
 	// take a copy of the oauth2 config so we can modify it by
 	// using the logout url as the auth url
@@ -238,12 +240,7 @@ func (s *stuff) handleOauth2Logout(w http.ResponseWriter, r *http.Request) {
 		ocfg.Endpoint.AuthURL = config.File.OAuth2.LogoutURL
 	}
 
-	authCodeURL := ocfg.AuthCodeURL(sess.NewNonce())
-	log.Println("redirecting", kv.List{
-		"url", authCodeURL,
-	})
-	s.saveSession(w, r, sess)
-	http.Redirect(w, r, authCodeURL, http.StatusTemporaryRedirect)
+	s.redirectToLogin(w, r, sess, &ocfg)
 }
 
 func isSameSite(referrer string, siteURL string) bool {
@@ -340,21 +337,27 @@ func (s *stuff) handleStaticAsset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !sess.IsValid() {
-		sess.Clear(w, r)
-
-		// redirecting to the login page, so set the session
-		// lifetime to a long time -- the login page can display
-		// for days before someone logs in
-		sess.SetExpires(time.Hour * 168)
 		sess.SetRequestURI(r.RequestURI) // remember the requested URI
-		authCodeURL := s.oauth2.AuthCodeURL(sess.NewNonce())
-		log.Println("redirecting", kv.List{
-			"url", authCodeURL,
-		})
-		s.saveSession(w, r, sess)
-		http.Redirect(w, r, authCodeURL, http.StatusTemporaryRedirect)
+		s.redirectToLogin(w, r, sess, nil)
 		return
 	}
 
 	s.static.ServeHTTP(w, r)
+}
+
+func (s *stuff) redirectToLogin(w http.ResponseWriter, r *http.Request, sess *websession.Session, ocfg *oauth2.Config) {
+	if ocfg == nil {
+		ocfg = &s.oauth2
+	}
+
+	authCodeURL := ocfg.AuthCodeURL(sess.Nonce())
+	log.Println("redirecting", kv.List{"url", authCodeURL})
+
+	// redirecting to the login page, so set the session
+	// lifetime to a long time -- the login page can display
+	// for days before someone logs in
+	sess.SetExpires(time.Hour * 168)
+
+	s.saveSession(w, r, sess)
+	http.Redirect(w, r, authCodeURL, http.StatusTemporaryRedirect)
 }

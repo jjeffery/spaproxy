@@ -213,33 +213,27 @@ func (s *Session) SetRequestURI(uri string) *Session {
 // Used for verifying oauth2 exchanges.
 func (s *Session) Nonce() string {
 	nonce, _ := s.sess.Values["nonce"].(string)
+	if nonce == "" {
+		nonce = strings.TrimRight(base32.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(5)), "=")
+		s.sess.Values["nonce"] = nonce
+	}
 	return nonce
 }
 
-// NewNonce generates a new random nonce associated with the session.
-// Used for verifying oauth2 exchanges.
-func (s *Session) NewNonce() string {
-	nonce := strings.TrimRight(base32.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(5)), "=")
-	s.sess.Values["nonce"] = nonce
-	return nonce
-}
-
-// ClearNonce removes the nonce from the session once it is no longer needed.
-func (s *Session) ClearNonce() {
-	delete(s.sess.Values, "nonce")
-}
-
-// Clear causes the session to be deleted when it is saved.
-func (s *Session) Clear(w http.ResponseWriter, r *http.Request) {
+// Delete the existing session and clear out details. Use for logging out.
+func (s *Session) Delete(w http.ResponseWriter, r *http.Request) {
 	if s.sess.ID != "" {
 		maxAge := s.sess.Options.MaxAge
 		s.SetToken(nil)
-		s.ClearNonce()
 		s.sess.Options.MaxAge = -1
 		s.Save(w, r)
 		s.sess.Options.MaxAge = maxAge
 	}
+	s.Clear()
+}
 
+// Clear out the session details, but leave the old session untouched.
+func (s *Session) Clear() {
 	s.sess.ID = ""
 	s.sess.Values = make(map[interface{}]interface{})
 }
