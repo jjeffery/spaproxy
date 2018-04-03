@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
 	"github.com/gorilla/securecookie"
 	"github.com/jjeffery/errors"
 	"github.com/jjeffery/httpapi"
@@ -47,24 +46,54 @@ func New() (http.Handler, error) {
 	}
 
 	h := chi.NewRouter()
-	h.Use(middleware.Logger)
-	h.HandleFunc(addPrefix("/oauth2/callback"), s.handleOauth2Callback)
-	h.HandleFunc(addPrefix("/logout"), s.handleOauth2Logout)
-	h.HandleFunc(addPrefix("/token.json"), s.handleToken)
+	h.Use(loggerMiddleware)
+	h.Method("GET", addPrefix("/oauth2/callback"), http.HandlerFunc(s.handleOauth2Callback))
+	h.Method("GET", addPrefix("/logout"), http.HandlerFunc(s.handleOauth2Logout))
+	h.Method("GET", addPrefix("/token.json"), http.HandlerFunc(s.handleToken))
 	h.NotFound(s.handleStaticAsset)
 
 	return h, nil
 }
 
+type logResponseWriter struct {
+	statusCode    int
+	w             http.ResponseWriter
+	headerWritten bool
+}
+
+func (w *logResponseWriter) Header() http.Header {
+	return w.w.Header()
+}
+
+func (w *logResponseWriter) WriteHeader(status int) {
+	if !w.headerWritten {
+		w.headerWritten = true
+		w.statusCode = status
+		w.w.WriteHeader(status)
+	}
+}
+
+func (w *logResponseWriter) Write(b []byte) (int, error) {
+	if !w.headerWritten {
+		w.headerWritten = true
+		w.statusCode = http.StatusOK
+	}
+	return w.w.Write(b)
+}
+
 func loggerMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		kvlist := kv.List{
-			"url", r.URL,
+		log.Println("start request", kv.List{
+			"requestURI", r.RequestURI,
+		})
+		lw := logResponseWriter{
+			w: w,
 		}
-		log.Println("start request", kvlist)
-		h.ServeHTTP(w, r)
-		log.Println("end request", kvlist)
-
+		h.ServeHTTP(&lw, r)
+		log.Println("end request", kv.List{
+			"requestURI", r.RequestURI,
+			"status", lw.statusCode,
+		})
 	})
 }
 
