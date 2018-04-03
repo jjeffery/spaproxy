@@ -187,6 +187,10 @@ func (s *stuff) handleOauth2Callback(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *stuff) handleOauth2Logout(w http.ResponseWriter, r *http.Request) {
+	if isCSRFAttempt(w, r) {
+		return
+	}
+
 	sess, err := s.getSession(w, r)
 	if err != nil {
 		return
@@ -213,7 +217,44 @@ func (s *stuff) handleOauth2Logout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, authCodeURL, http.StatusTemporaryRedirect)
 }
 
+func isSameSite(referrer string, siteURL string) bool {
+	// perform case-insensitive comparisons
+	siteURL = strings.ToLower(siteURL)
+	referrer = strings.ToLower(referrer)
+
+	sitePrefix := siteURL
+	if !strings.HasSuffix(sitePrefix, "/") {
+		sitePrefix += "/"
+	}
+	return referrer == siteURL ||
+		referrer == sitePrefix ||
+		strings.HasPrefix(referrer, sitePrefix)
+}
+
+func isCSRFAttempt(w http.ResponseWriter, r *http.Request) bool {
+	// Check for CSRF from a browser. Note that because CORS is not enabled,
+	// any XHR requests should be forbidden.
+	// Note that HTTP header has one less "r" than expected: Referer
+	// Todo: this logic should be in its own function with its own unit test
+	if referrer := r.Header.Get("Referer"); referrer != "" {
+		if !isSameSite(referrer, config.File.SiteURL) {
+			log.Println("detected CSRF attempt", kv.List{
+				"referrer", referrer,
+				"requestURI", r.RequestURI,
+				"siteURL", config.File.SiteURL,
+			})
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return true
+		}
+	}
+	return false
+}
+
 func (s *stuff) handleToken(w http.ResponseWriter, r *http.Request) {
+	if isCSRFAttempt(w, r) {
+		return
+	}
+
 	sess, err := s.getSession(w, r)
 	if err != nil {
 		return
@@ -233,9 +274,10 @@ func (s *stuff) handleToken(w http.ResponseWriter, r *http.Request) {
 		token, err = tokenSource.Token()
 		if err != nil {
 			// todo(jpj): is this always an internal error? probably not
-			s.handleError(w, err)
+			s.handleError(w, errors.Wrap(err, "cannot refresh token"))
 			return
 		}
+		log.Println("new token issued")
 		sess.SetToken(token)
 		s.saveSession(w, r, sess)
 	}
