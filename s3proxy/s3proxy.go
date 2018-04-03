@@ -6,6 +6,7 @@ package s3proxy
 
 import (
 	"io"
+	"log"
 	"mime"
 	"net/http"
 	"path"
@@ -17,6 +18,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/jjeffery/errors"
+	"github.com/jjeffery/kv"
 )
 
 var (
@@ -129,12 +132,23 @@ func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		key = key[len(p.stripPath):]
 	}
 
-	var indexDocument bool
+	// When true, do not search for an index document if the requested document
+	// is not found. Ie, if "static/abc.js" is not found, do not search for
+	// "static/abc.js/index.html".
+	var doNotSearchForIndexDocument bool
 
 	if key == "" || key == "/" {
-		// the root object in the hierarchy means search for
+		// the root object in the hierarchy means search for the index document
 		key = p.index
-		indexDocument = true
+		doNotSearchForIndexDocument = true
+	} else {
+		switch strings.ToLower(path.Ext(key)) {
+		case ".js", ".html", ".htm", ".css", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".ico":
+			// Common file suffixes do not warrant checking if they are a directory.
+			// This means that things will not work as expected if you create a directory with
+			// a name that has any of these extensions.
+			doNotSearchForIndexDocument = true
+		}
 	}
 
 	if p.keyPrefix != "" {
@@ -168,12 +182,31 @@ retry:
 			p.internalError(w, r, err)
 			return
 		}
-		switch statusCoder.StatusCode() {
+		statusCode := statusCoder.StatusCode()
+		switch statusCode {
 		case http.StatusNotModified:
+			log.Println("not modified")
 			http.Error(w, "not modified", http.StatusNotModified)
 			return
-		case http.StatusNotFound:
-			if indexDocument {
+		case http.StatusForbidden, http.StatusNotFound:
+			// If the session permission does not include permission to list objects
+			// in the bucket, then a 403 will be returned if the object is not found.
+			// the reason for this is that without s3:ListObjects permission, the caller
+			// is not permitted to tell if an object exists or not.
+			//
+			// So we interpret a 403 as a 404.
+			if statusCode == http.StatusForbidden {
+				log.Println("s3 object not found", kv.List{
+					"bucket", *input.Bucket,
+					"key", *input.Key,
+				})
+			} else {
+				log.Println("s3 object forbidden", kv.List{
+					"bucket", *input.Bucket,
+					"key", *input.Key,
+				})
+			}
+			if doNotSearchForIndexDocument {
 				p.notFound.ServeHTTP(w, r)
 				return
 			}
@@ -181,10 +214,14 @@ retry:
 			// not found, but could be directory requiring an index
 			// document -- append the index document and try again
 			key = path.Join(key, p.index)
-			indexDocument = true
+			doNotSearchForIndexDocument = true
 			input.SetKey(key)
 			goto retry
 		default:
+			err = errors.Wrap(err, "cannot get from s3").With(
+				"bucket", *input.Bucket,
+				"key", *input.Key,
+			)
 			p.internalError(w, r, err)
 			return
 		}
