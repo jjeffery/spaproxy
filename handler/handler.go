@@ -309,13 +309,17 @@ func (s *stuff) handleToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var response struct {
-		IDToken          string `json:"idToken,omitempty"`
-		AccessToken      string `json:"accessToken"`
-		ExpiresInSeconds int64  `json:"expiresInSeconds"`
+		IDToken          string `json:"id_token,omitempty"`
+		AccessToken      string `json:"access_token"`
+		ExpiresInSeconds int64  `json:"expires_in"`
+		TokenType        string `json:"token_type"`
+		Scope            string `json:"scope,omitempty"`
 	}
 
 	response.AccessToken = token.AccessToken
 	response.IDToken = sess.IDToken()
+	response.TokenType = token.TokenType
+	// TODO(jpj): include scope
 
 	// Time to deduct from the expires in seconds. The oauth2 implementation is 10
 	// seconnds, if we refresh more than 10 seconds before expiry we will not get
