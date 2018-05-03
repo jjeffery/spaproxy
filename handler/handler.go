@@ -52,6 +52,7 @@ func New() (http.Handler, error) {
 	h.Method("GET", addPrefix("/logout"), http.HandlerFunc(s.handleOauth2Logout))
 	h.Method("GET", addPrefix("/token.json"), http.HandlerFunc(s.handleToken))
 	h.Method("GET", addPrefix("/environment.json"), http.HandlerFunc(s.handleEnvironment))
+	h.Method("GET", addPrefix("/asset-manifest.json"), http.HandlerFunc(s.handleAssetManifest))
 	h.NotFound(s.handleStaticAsset)
 
 	return h, nil
@@ -356,6 +357,11 @@ func (s *stuff) handleEnvironment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(b)
+}
+
+func (s *stuff) handleAssetManifest(w http.ResponseWriter, r *http.Request) {
+	// don't publish the asset manifest
+	http.Error(w, "not found", http.StatusNotFound)
 }
 
 func (s *stuff) handleStaticAsset(w http.ResponseWriter, r *http.Request) {
