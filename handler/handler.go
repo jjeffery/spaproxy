@@ -2,6 +2,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"net/url"
@@ -50,6 +51,7 @@ func New() (http.Handler, error) {
 	h.Method("GET", addPrefix("/oauth2/callback"), http.HandlerFunc(s.handleOauth2Callback))
 	h.Method("GET", addPrefix("/logout"), http.HandlerFunc(s.handleOauth2Logout))
 	h.Method("GET", addPrefix("/token.json"), http.HandlerFunc(s.handleToken))
+	h.Method("GET", addPrefix("/environment.json"), http.HandlerFunc(s.handleEnvironment))
 	h.NotFound(s.handleStaticAsset)
 
 	return h, nil
@@ -332,6 +334,28 @@ func (s *stuff) handleToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpapi.WriteResponse(w, r, response)
+}
+
+func (s *stuff) handleEnvironment(w http.ResponseWriter, r *http.Request) {
+	if isCSRFAttempt(w, r) {
+		return
+	}
+
+	var b []byte
+
+	if config.File.Environment == nil {
+		b = []byte("{}")
+	} else {
+		var err error
+		b, err = json.MarshalIndent(config.File.Environment, "", "  ")
+		if err != nil {
+			log.Println("error: cannot marshal environment:", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	w.Write(b)
 }
 
 func (s *stuff) handleStaticAsset(w http.ResponseWriter, r *http.Request) {

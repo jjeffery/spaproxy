@@ -185,7 +185,6 @@ retry:
 		statusCode := statusCoder.StatusCode()
 		switch statusCode {
 		case http.StatusNotModified:
-			log.Println("not modified")
 			http.Error(w, "not modified", http.StatusNotModified)
 			return
 		case http.StatusForbidden, http.StatusNotFound:

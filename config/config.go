@@ -14,6 +14,7 @@ type Config struct {
 	StaticAssets S3Config
 	Session      SessionConfig
 	OAuth2       OAuth2Config
+	Environment  Environment
 }
 
 // S3Config contains the configuration for the S3 static assets.
@@ -39,6 +40,9 @@ type OAuth2Config struct {
 	ClientSecret string
 }
 
+// Environment contains arbitrary environment-specific information.
+type Environment map[string]interface{}
+
 var (
 	// File is the variable where the configuration is loaded.
 	File Config
@@ -61,5 +65,27 @@ func Load() error {
 		return err
 	}
 
+	File.Environment = normalize(File.Environment)
+
 	return nil
+}
+
+func normalize(m map[string]interface{}) map[string]interface{} {
+	if m == nil {
+		m = make(map[string]interface{})
+	}
+	for k, v := range m {
+		if arr, ok := v.([]map[string]interface{}); ok {
+			if len(arr) == 1 {
+				m[k] = normalize(arr[0])
+			} else {
+				for i := range arr {
+					arr[i] = normalize(arr[i])
+				}
+			}
+		} else if mm, ok := v.(map[string]interface{}); ok {
+			m[k] = normalize(mm)
+		}
+	}
+	return m
 }
