@@ -238,20 +238,28 @@ func (s *stuff) handleOauth2Logout(w http.ResponseWriter, r *http.Request) {
 
 	if config.File.OAuth2.LogoutURL != "" {
 		u, err := url.Parse(config.File.OAuth2.LogoutURL)
-		if err == nil {
-			q := u.Query()
+		if err != nil {
+			log.Println("warn: cannot parse LogoutURL", kv.List{
+				"LogoutURL", config.File.OAuth2.LogoutURL,
+				"error", err,
+			})
+			s.handleError(w, err)
+			return
+		}
+		q := u.Query()
+		if q.Get("logout_uri") != "" {
+			// When the logout URL contains a "logout_uri" query parameter, then
+			// just add the client id and send. This handles the special case for
+			// AWS Cognito, for which the "logout_uri" query parameter is significant.
 			q.Add("client_id", config.File.OAuth2.ClientID)
 			u.RawQuery = q.Encode()
 			http.Redirect(w, r, u.String(), http.StatusTemporaryRedirect)
 			return
 		}
-		log.Println("warn: cannot parse LogoutURL", kv.List{
-			"LogoutURL", config.File.OAuth2.LogoutURL,
-			"error", err,
-		})
 	}
 
-	// This only happens if no logout url is provided, or if it cannot be parsed.
+	// This happens if no logout url is provided, or if it does not contain a "logout_uri"
+	// query parameter.
 	// Take a copy of the oauth2 config so we can modify it by
 	// using the logout url as the auth url.
 	ocfg := s.oauth2
