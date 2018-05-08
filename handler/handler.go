@@ -236,8 +236,23 @@ func (s *stuff) handleOauth2Logout(w http.ResponseWriter, r *http.Request) {
 	}
 	sess.Delete(w, r)
 
-	// take a copy of the oauth2 config so we can modify it by
-	// using the logout url as the auth url
+	if config.File.OAuth2.LogoutURL != "" {
+		u, err := url.Parse(config.File.OAuth2.LogoutURL)
+		if err == nil {
+			q := u.Query()
+			q.Add("client_id", config.File.OAuth2.ClientID)
+			http.Redirect(w, r, u.String(), http.StatusTemporaryRedirect)
+			return
+		}
+		log.Println("warn: cannot parse LogoutURL", kv.List{
+			"LogoutURL", config.File.OAuth2.LogoutURL,
+			"error", err,
+		})
+	}
+
+	// This only happens if no logout url is provided, or if it cannot be parsed.
+	// Take a copy of the oauth2 config so we can modify it by
+	// using the logout url as the auth url.
 	ocfg := s.oauth2
 	if config.File.OAuth2.LogoutURL != "" {
 		ocfg.Endpoint.AuthURL = config.File.OAuth2.LogoutURL
