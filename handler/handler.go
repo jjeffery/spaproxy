@@ -241,6 +241,7 @@ func (s *stuff) handleOauth2Logout(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			q := u.Query()
 			q.Add("client_id", config.File.OAuth2.ClientID)
+			u.RawQuery = q.Encode()
 			http.Redirect(w, r, u.String(), http.StatusTemporaryRedirect)
 			return
 		}
