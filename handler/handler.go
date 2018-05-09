@@ -366,6 +366,9 @@ func (s *stuff) handleEnvironment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// reload the config file, continue if error
+	config.Load()
+
 	var b []byte
 
 	if config.File.Environment == nil {
