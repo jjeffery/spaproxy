@@ -3,7 +3,10 @@
 package config
 
 import (
+	"fmt"
+	"log"
 	"os"
+	"strings"
 
 	"github.com/jjeffery/hclconfig"
 )
@@ -11,14 +14,19 @@ import (
 // Config represents the structure of the configuration file.
 type Config struct {
 	SiteURL      string
-	StaticAssets S3Config
+	StaticAssets StaticConfig
 	Session      SessionConfig
 	OAuth2       OAuth2Config
 	Environment  Environment
 }
 
-// S3Config contains the configuration for the S3 static assets.
-type S3Config struct {
+// StaticConfig contains the configuration for the static assets.
+type StaticConfig struct {
+	URL   string
+	Allow []string // list of paths that do not require authentication
+
+	// Deprecated: use URL instead. If URL is not supplied and
+	// Bucket is supplied, then URL is constructed from Bucket and Prefix.
 	Bucket string
 	Prefix string
 }
@@ -60,12 +68,25 @@ func Load() error {
 	if err != nil {
 		return err
 	}
+	log.Println("loaded config:", configLocation)
 
-	if err := file.Decode(&File); err != nil {
+	var configFile Config
+
+	if err := file.Decode(&configFile); err != nil {
 		return err
 	}
+	configFile.Environment = normalize(configFile.Environment)
 
-	File.Environment = normalize(File.Environment)
+	// For backwards compatibility, build an S3 URL if only Bucket and Prefix are provided.
+	if configFile.StaticAssets.URL == "" && configFile.StaticAssets.Bucket != "" {
+		configFile.StaticAssets.URL = fmt.Sprintf("s3://%s/%s",
+			configFile.StaticAssets.Bucket,
+			strings.TrimPrefix(configFile.StaticAssets.Prefix, "/"))
+	}
+	configFile.StaticAssets.Bucket = "" // deprecated
+	configFile.StaticAssets.Prefix = "" // deprecated
+
+	File = configFile
 
 	return nil
 }
