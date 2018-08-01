@@ -44,6 +44,7 @@ type OAuth2Config struct {
 	AuthURL      string
 	TokenURL     string
 	LogoutURL    string
+	LandingURL   string
 	ClientID     string
 	ClientSecret string
 }

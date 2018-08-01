@@ -49,9 +49,11 @@ func New() (http.Handler, error) {
 	h := chi.NewRouter()
 	h.Use(loggerMiddleware)
 	h.Method("GET", addPrefix("/oauth2/callback"), http.HandlerFunc(s.handleOauth2Callback))
-	h.Method("GET", addPrefix("/logout"), http.HandlerFunc(s.handleOauth2Logout))
+	h.Method("GET", addPrefix("/logout"), s.handleOauth2Logout())
+	h.Method("GET", addPrefix("/oauth2/login"), s.loginRedirectHandler())
+	h.Method("GET", addPrefix("/oauth2/landing"), s.landingPageHandler())
 	h.Method("GET", addPrefix("/token.json"), http.HandlerFunc(s.handleToken))
-	h.Method("GET", addPrefix("/environment.json"), http.HandlerFunc(s.handleEnvironment))
+	h.Method("GET", addPrefix("/environment.json"), s.handleEnvironment())
 	h.Method("GET", addPrefix("/asset-manifest.json"), http.HandlerFunc(s.handleAssetManifest))
 	h.NotFound(s.handleStaticAsset)
 
@@ -101,9 +103,10 @@ func loggerMiddleware(h http.Handler) http.Handler {
 }
 
 type stuff struct {
-	store  *websession.Storage
-	static http.Handler
-	oauth2 oauth2.Config
+	siteURL *url.URL
+	store   *websession.Storage
+	static  http.Handler
+	oauth2  oauth2.Config
 }
 
 func newStuff(siteURL *url.URL) (*stuff, error) {
@@ -134,10 +137,19 @@ func newStuff(siteURL *url.URL) (*stuff, error) {
 		RedirectURL: redirectURL.String(),
 	}
 
+	staticAssetsHandler, err := newStaticAssetsHandler()
+	if err != nil {
+		return nil, err
+	}
+
+	// take a copy of the site URL
+	siteURLCopy := *siteURL
+
 	stuff := stuff{
-		store:  store,
-		static: newStaticAssetsHandler(),
-		oauth2: ocfg,
+		siteURL: &siteURLCopy,
+		store:   store,
+		static:  staticAssetsHandler,
+		oauth2:  ocfg,
 	}
 	return &stuff, nil
 }
@@ -225,49 +237,49 @@ func (s *stuff) handleOauth2Callback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, redirectURI, http.StatusTemporaryRedirect)
 }
 
-func (s *stuff) handleOauth2Logout(w http.ResponseWriter, r *http.Request) {
-	if isCSRFAttempt(w, r) {
-		return
-	}
-
-	sess, err := s.getSession(w, r)
-	if err != nil {
-		return
-	}
-	sess.Delete(w, r)
-
-	if config.File.OAuth2.LogoutURL != "" {
-		u, err := url.Parse(config.File.OAuth2.LogoutURL)
-		if err != nil {
-			log.Println("warn: cannot parse LogoutURL", kv.List{
-				"LogoutURL", config.File.OAuth2.LogoutURL,
-				"error", err,
-			})
-			s.handleError(w, err)
+func (s *stuff) handleOauth2Logout() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if isCSRFAttempt(w, r) {
 			return
 		}
-		q := u.Query()
-		if q.Get("logout_uri") != "" {
-			// When the logout URL contains a "logout_uri" query parameter, then
-			// just add the client id and send. This handles the special case for
-			// AWS Cognito, for which the "logout_uri" query parameter is significant.
+
+		sess, err := s.getSession(w, r)
+		if err != nil {
+			return
+		}
+		sess.Delete(w, r)
+
+		redirectURL := *s.siteURL
+		redirectURL.Path = path.Join(redirectURL.Path, "oauth2", "landing")
+
+		if config.File.OAuth2.LogoutURL != "" {
+			u, err := url.Parse(config.File.OAuth2.LogoutURL)
+			if err != nil {
+				log.Println("warn: cannot parse LogoutURL", kv.List{
+					"LogoutURL", config.File.OAuth2.LogoutURL,
+					"error", err,
+				})
+				s.handleError(w, err)
+				return
+			}
+
+			q := u.Query()
 			q.Add("client_id", config.File.OAuth2.ClientID)
+			q.Add("logout_uri", redirectURL.String())
+
 			u.RawQuery = q.Encode()
+			log.Println("redirecting", kv.List{
+				"url", u,
+			})
 			http.Redirect(w, r, u.String(), http.StatusTemporaryRedirect)
 			return
 		}
-	}
 
-	// This happens if no logout url is provided, or if it does not contain a "logout_uri"
-	// query parameter.
-	// Take a copy of the oauth2 config so we can modify it by
-	// using the logout url as the auth url.
-	ocfg := s.oauth2
-	if config.File.OAuth2.LogoutURL != "" {
-		ocfg.Endpoint.AuthURL = config.File.OAuth2.LogoutURL
+		log.Println("redirecting", kv.List{
+			"url", redirectURL,
+		})
+		http.Redirect(w, r, redirectURL.String(), http.StatusTemporaryRedirect)
 	}
-
-	s.redirectToLogin(w, r, sess, &ocfg)
 }
 
 func isSameSite(referrer string, siteURL string) bool {
@@ -361,29 +373,31 @@ func (s *stuff) handleToken(w http.ResponseWriter, r *http.Request) {
 	httpapi.WriteResponse(w, r, response)
 }
 
-func (s *stuff) handleEnvironment(w http.ResponseWriter, r *http.Request) {
-	if isCSRFAttempt(w, r) {
-		return
-	}
-
-	// reload the config file, continue if error
-	config.Load()
-
-	var b []byte
-
-	if config.File.Environment == nil {
-		b = []byte("{}")
-	} else {
-		var err error
-		b, err = json.MarshalIndent(config.File.Environment, "", "  ")
-		if err != nil {
-			log.Println("error: cannot marshal environment:", err)
-			http.Error(w, "internal server error", http.StatusInternalServerError)
+func (s *stuff) handleEnvironment() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if isCSRFAttempt(w, r) {
 			return
 		}
-	}
 
-	w.Write(b)
+		// reload the config file, continue if error
+		config.Load()
+
+		var b []byte
+
+		if config.File.Environment == nil {
+			b = []byte("{}")
+		} else {
+			var err error
+			b, err = json.MarshalIndent(config.File.Environment, "", "  ")
+			if err != nil {
+				log.Println("error: cannot marshal environment:", err)
+				http.Error(w, "internal server error", http.StatusInternalServerError)
+				return
+			}
+		}
+
+		w.Write(b)
+	}
 }
 
 func (s *stuff) handleAssetManifest(w http.ResponseWriter, r *http.Request) {
@@ -392,6 +406,17 @@ func (s *stuff) handleAssetManifest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *stuff) handleStaticAsset(w http.ResponseWriter, r *http.Request) {
+	path := strings.Trim(r.URL.Path, "/")
+	for _, allowed := range config.File.StaticAssets.Allow {
+		allowed = strings.Trim(allowed, "/")
+		// TODO: handle wildcards
+		if strings.EqualFold(path, allowed) {
+			// handle this one without authentication
+			s.static.ServeHTTP(w, r)
+			return
+		}
+	}
+
 	sess, err := s.getSession(w, r)
 	if err != nil {
 		return
@@ -421,4 +446,37 @@ func (s *stuff) redirectToLogin(w http.ResponseWriter, r *http.Request, sess *we
 
 	s.saveSession(w, r, sess)
 	http.Redirect(w, r, authCodeURL, http.StatusTemporaryRedirect)
+}
+
+func (s *stuff) loginRedirectHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		sess, err := s.getSession(w, r)
+		if err != nil {
+			return
+		}
+		s.redirectToLogin(w, r, sess, nil)
+	}
+}
+
+func (s *stuff) landingPageHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if u := config.File.OAuth2.LandingURL; u != "" {
+			http.Redirect(w, r, u, http.StatusTemporaryRedirect)
+			return
+		}
+
+		html := `<!doctype html>
+<html>
+<head>
+<title>Sign in required</title>
+</head>
+<body>
+<h1>Login Required</h1>
+<p>To proceed you need to <a href="login">sign in</a></p>
+</body>
+</html>
+`
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(html))
+	}
 }
