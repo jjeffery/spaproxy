@@ -67,7 +67,7 @@
 
 [[constraint]]
   name = "github.com/jjeffery/shutdown"
-  version = "1.0.0"
+  version = "0.5.0"
 
 [[constraint]]
   name = "github.com/pkg/errors"

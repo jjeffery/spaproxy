@@ -2,17 +2,20 @@
 
 
 [[projects]]
+  digest = "1:b563dc18255a9e7556a5c53ba9ba8aeaff5bfb54247a915a986714a3f1748551"
   name = "github.com/aws/aws-lambda-go"
   packages = [
     "events",
     "lambda",
     "lambda/messages",
-    "lambdacontext"
+    "lambdacontext",
   ]
+  pruneopts = "UT"
   revision = "fafa7e49388b8991caf99308e80655ba91816b72"
   version = "v1.1.0"
 
 [[projects]]
+  digest = "1:0242d6c0c7b723dd914a8e633f54da2648687345be70d22aae4189086a460718"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -46,58 +49,71 @@
     "service/dynamodb/dynamodbattribute",
     "service/kms",
     "service/s3",
-    "service/sts"
+    "service/sts",
   ]
+  pruneopts = "UT"
   revision = "74ca63959be8b9a9a24cd86eaaea8bf99de8022d"
   version = "v1.13.25"
 
 [[projects]]
+  digest = "1:66ddebb274faa160a4a23394a17ad3c8e15fee9bf5408d13f77d22b61bc7f072"
   name = "github.com/go-chi/chi"
-  packages = [
-    ".",
-    "middleware"
-  ]
+  packages = ["."]
+  pruneopts = "UT"
   revision = "e83ac2304db3c50cf03d96a2fcd39009d458bc35"
   version = "v3.3.2"
 
 [[projects]]
+  digest = "1:db18b69d50d54aadb436b8639e2b55b5ece5f595a601d9eb461fabd998ebb288"
   name = "github.com/go-ini/ini"
   packages = ["."]
+  pruneopts = "UT"
   revision = "6333e38ac20b8949a8dd68baa3650f4dee8f39f0"
   version = "v1.33.0"
 
 [[projects]]
+  digest = "1:c4a2528ccbcabf90f9f3c464a5fc9e302d592861bbfd0b7135a7de8a943d0406"
   name = "github.com/go-stack/stack"
   packages = ["."]
+  pruneopts = "UT"
   revision = "259ab82a6cad3992b4e21ff5cac294ccb06474bc"
   version = "v1.7.0"
 
 [[projects]]
+  digest = "1:ffc060c551980d37ee9e428ef528ee2813137249ccebb0bfc412ef83071cac91"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
+  pruneopts = "UT"
   revision = "925541529c1fa6821df4e44ce2723319eb2be768"
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:160eabf7a69910fd74f29c692718bc2437c1c1c7d4c9dea9712357752a70e5df"
   name = "github.com/gorilla/context"
   packages = ["."]
+  pruneopts = "UT"
   revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
   version = "v1.1"
 
 [[projects]]
+  digest = "1:e72d1ebb8d395cf9f346fd9cbc652e5ae222dd85e0ac842dc57f175abed6d195"
   name = "github.com/gorilla/securecookie"
   packages = ["."]
+  pruneopts = "UT"
   revision = "e59506cc896acb7f7bf732d4fdf5e25f7ccd8983"
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:e088abc94b4678eb30d09467df7ac2828712aa5e16d1e390f81074dc48c3b96d"
   name = "github.com/gorilla/sessions"
   packages = ["."]
+  pruneopts = "UT"
   revision = "ca9ada44574153444b00d3fd9c8559e4cc95f896"
   version = "v1.1"
 
 [[projects]]
   branch = "master"
+  digest = "1:ced6f60c29603800ecc9b37984ad0424f28482d672831aec9733625314e0b665"
   name = "github.com/hashicorp/hcl"
   packages = [
     ".",
@@ -108,109 +124,139 @@
     "hcl/token",
     "json/parser",
     "json/scanner",
-    "json/token"
+    "json/token",
   ]
+  pruneopts = "UT"
   revision = "f40e974e75af4e271d97ce0fc917af5898ae7bda"
 
 [[projects]]
+  digest = "1:d55fefc1992e33d92fdd7e489ad823e0677ea3f3f0519dccf3dc7e6652a38cb1"
   name = "github.com/jjeffery/apigatewayproxy"
   packages = ["."]
+  pruneopts = "UT"
   revision = "ed9fb92f4a6009912032eab5c4affe1b096809a6"
   version = "v1.0.1"
 
 [[projects]]
+  digest = "1:5a5148dbface3aa49af599670e5158b1324e03c5e1bbb1ae2f8cd7f60a1c141a"
   name = "github.com/jjeffery/errkind"
   packages = ["."]
+  pruneopts = "UT"
   revision = "d8a115ef2586174662a6147f7ee11a8b892b418d"
   version = "v1.0"
 
 [[projects]]
+  digest = "1:ac54fdbe6038c2ed2431fc31b3a1f059d315da9cf593bf87ccc0493764d6ea8e"
   name = "github.com/jjeffery/errors"
   packages = ["."]
+  pruneopts = "UT"
   revision = "4f39c4610ac98f897f2dbc6a4a4b89aa86bcf45b"
   version = "v1.0.2"
 
 [[projects]]
   branch = "master"
+  digest = "1:a1c90ccebd868b863559182a6fbc6df92f0bf3f2d572b58b770874f8de28869a"
   name = "github.com/jjeffery/hclconfig"
   packages = [
     ".",
     "amzn",
     "astcrypt",
     "download",
-    "encryption"
+    "encryption",
   ]
+  pruneopts = "UT"
   revision = "da75f93f2c21ac60de0cd486826034ac44bd0736"
 
 [[projects]]
   branch = "master"
+  digest = "1:43104978b299e1b9eec6cab2a983a3a7c103500da963e384ba81fd0c2ba7684f"
   name = "github.com/jjeffery/httpapi"
   packages = [
     ".",
-    "writeerror"
+    "writeerror",
   ]
+  pruneopts = "UT"
   revision = "e2e4cd9b204f041b758df4fac49f3aa61f22c12e"
 
 [[projects]]
+  digest = "1:1200d8db6297619ee900fabb7ea91e159aefe3f5c7e0e06b0164b9a74a1359d5"
   name = "github.com/jjeffery/kv"
   packages = ["."]
+  pruneopts = "UT"
   revision = "e16ed12583c8a365f8ae714c7564eeef173447dc"
   version = "v1.0"
 
 [[projects]]
+  digest = "1:34bb45319579d8c9a38eab3e85e73e659378f6927e0c5ff91e59871f083f0976"
   name = "github.com/jjeffery/shutdown"
   packages = ["."]
+  pruneopts = "UT"
   revision = "c86325bb5100a9810a5858a2f9149fdb7e1d4fdb"
-  version = "v1.0"
+  version = "v0.5.0"
 
 [[projects]]
+  digest = "1:1b8ac58328b5dfca091e1017b4c889237a523f2ba1a09d685439e86838894374"
   name = "github.com/jjeffery/stringset"
   packages = ["."]
+  pruneopts = "UT"
   revision = "5717ffa3d2fa33f563febdef2e742f9f78d39454"
   version = "v1.0"
 
 [[projects]]
+  digest = "1:e22af8c7518e1eab6f2eab2b7d7558927f816262586cd6ed9f349c97a6c285c4"
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
+  pruneopts = "UT"
   revision = "0b12d6b5"
 
 [[projects]]
+  digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
   name = "github.com/pkg/errors"
   packages = ["."]
+  pruneopts = "UT"
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
 
 [[projects]]
   branch = "master"
+  digest = "1:513caf2af69e63d1ce707cc0d57c9ae0a78826d984f99b56a48f5f7ed2ff6cd3"
   name = "github.com/spkg/local"
   packages = ["."]
+  pruneopts = "UT"
   revision = "1355a9e1ee2530304c3546424d860f389f0ac202"
 
 [[projects]]
   branch = "master"
+  digest = "1:86f286e7afe01694ffd50bf9226ce2158a75ad099c03071be32b592d68115325"
   name = "golang.org/x/crypto"
   packages = ["hkdf"]
+  pruneopts = "UT"
   revision = "12892e8c234f4fe6f6803f052061de9057903bb2"
 
 [[projects]]
   branch = "master"
+  digest = "1:d6b719875cf8091fbab38527d81d34e71f4521b9ee9ccfbd4a32cff2ac5af96e"
   name = "golang.org/x/net"
   packages = [
     "context",
-    "context/ctxhttp"
+    "context/ctxhttp",
   ]
+  pruneopts = "UT"
   revision = "b68f30494add4df6bd8ef5e82803f308e7f7c59c"
 
 [[projects]]
   branch = "master"
+  digest = "1:7cb06c9a523660f3c50c6f63f2e2c90052c359b046d2ef1152f2182169dbb720"
   name = "golang.org/x/oauth2"
   packages = [
     ".",
-    "internal"
+    "internal",
   ]
+  pruneopts = "UT"
   revision = "fdc9e635145ae97e6c2cb777c48305600cf515cb"
 
 [[projects]]
+  digest = "1:9cf45e754ab2dff5f53a553e6948b994ff738e4d1092ca608dcada945d8be0ef"
   name = "google.golang.org/appengine"
   packages = [
     "internal",
@@ -219,14 +265,35 @@
     "internal/log",
     "internal/remote_api",
     "internal/urlfetch",
-    "urlfetch"
+    "urlfetch",
   ]
+  pruneopts = "UT"
   revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
   version = "v1.0.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b8e93d21d6fe922b536cd8c605308ab4908998414837783a203a102c0bd7cbee"
+  input-imports = [
+    "github.com/aws/aws-sdk-go/aws",
+    "github.com/aws/aws-sdk-go/aws/credentials",
+    "github.com/aws/aws-sdk-go/aws/session",
+    "github.com/aws/aws-sdk-go/service/dynamodb",
+    "github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute",
+    "github.com/aws/aws-sdk-go/service/s3",
+    "github.com/go-chi/chi",
+    "github.com/gorilla/securecookie",
+    "github.com/gorilla/sessions",
+    "github.com/hashicorp/hcl",
+    "github.com/jjeffery/apigatewayproxy",
+    "github.com/jjeffery/errors",
+    "github.com/jjeffery/hclconfig",
+    "github.com/jjeffery/httpapi",
+    "github.com/jjeffery/kv",
+    "github.com/jjeffery/shutdown",
+    "github.com/pkg/errors",
+    "golang.org/x/crypto/hkdf",
+    "golang.org/x/oauth2",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
